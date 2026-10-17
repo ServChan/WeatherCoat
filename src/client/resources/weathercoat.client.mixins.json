@@ -3,12 +3,16 @@
   "package": "org.lts.weathercoat.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "CapeLayerMixin",
     "EquipmentLayerRendererMixin",
+    "HorseMarkingLayerMixin",
     "LivingEntityRenderStateMixin",
     "LivingEntityRendererMixin",
     "ModelPartAccessor",
     "RenderLayerMixin",
-    "TextureManagerMixin"
+    "SlimeOuterLayerMixin",
+    "TextureManagerMixin",
+    "WolfCollarLayerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

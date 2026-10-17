@@ -99,6 +99,8 @@ public final class CoatTracker {
             wetDelta = -stages;
         } else if (raining) {
             wetDelta = SECONDS_PER_UPDATE * intensity / config.wetSecondsPerStage;
+        } else if (entity.isInWater()) {
+            wetDelta = 0.0F;
         } else {
             wetDelta = -SECONDS_PER_UPDATE / config.drySecondsPerStage;
         }

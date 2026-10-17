@@ -138,4 +138,32 @@ class CoatPainterTest {
     void rejectsMismatchedPixelCount() {
         assertThrows(IllegalArgumentException.class, () -> CoatPainter.paint(new int[3], cube(), 1.0F, 0.0F, 1L));
     }
+
+    @Test
+    void snowMaskMatchesTheSnowOfTheFullCoat() {
+        int[] base = solid(BASE);
+        base[70] = 0x00000000;
+        FaceMap map = cube();
+        int[] full = CoatPainter.paint(base, map, 0.0F, 0.75F, 11L);
+        int[] mask = CoatPainter.snowMask(base, map, 0.75F, 11L);
+        int snowy = 0;
+        for (int i = 0; i < base.length; i++) {
+            if ((mask[i] >>> 24) != 0) {
+                snowy++;
+                assertEquals(full[i], mask[i], "mask pixel " + i + " differs from the coat");
+            } else {
+                assertTrue(full[i] == base[i] || !isSnow(full[i]), "coat pixel " + i + " is snow but the mask is empty");
+            }
+        }
+        assertTrue(snowy > 0);
+        assertEquals(0, mask[70]);
+    }
+
+    @Test
+    void emptySnowMaskWithoutSnow() {
+        int[] mask = CoatPainter.snowMask(solid(BASE), cube(), 0.0F, 11L);
+        for (int pixel : mask) {
+            assertEquals(0, pixel);
+        }
+    }
 }

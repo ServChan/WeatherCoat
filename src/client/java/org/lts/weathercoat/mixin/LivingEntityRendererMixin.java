@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import org.lts.weathercoat.WeatherCoatConfig;
 import org.lts.weathercoat.render.CoatRenderState;
-import org.lts.weathercoat.render.CoatTextures;
+import org.lts.weathercoat.render.Coats;
 import org.lts.weathercoat.track.CoatProgress;
 import org.lts.weathercoat.track.CoatTracker;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,8 +39,6 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/entity/LivingEntityRenderer;getTextureLocation(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;)Lnet/minecraft/resources/Identifier;"))
     private Identifier weathercoat$coatTexture(Identifier texture, S state) {
-        CoatRenderState coatState = (CoatRenderState) state;
-        return CoatTextures.get().resolve(texture, model,
-                coatState.weathercoat$wetStage(), coatState.weathercoat$snowStage(), coatState.weathercoat$stages());
+        return Coats.texture(texture, model, state);
     }
 }

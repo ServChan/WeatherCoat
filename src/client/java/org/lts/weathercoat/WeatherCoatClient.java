@@ -17,7 +17,7 @@ public final class WeatherCoatClient implements ClientModInitializer {
             CoatTracker.get().tick(client);
             if (client.level == null) {
                 CoatTextures.get().clear();
-            } else if (client.level.getGameTime() % 200L == 0L) {
+            } else {
                 CoatTextures.get().tick();
             }
         });

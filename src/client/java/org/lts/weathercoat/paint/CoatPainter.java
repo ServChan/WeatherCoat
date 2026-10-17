@@ -86,12 +86,53 @@ public final class CoatPainter {
         return map.depth(x, belowY) > streak;
     }
 
+    public static int[] snowMask(int[] base, FaceMap map, float snow, long seed) {
+        int width = map.width();
+        int height = map.height();
+        if (base.length != width * height) {
+            throw new IllegalArgumentException("Pixel count " + base.length + " does not match " + width + "x" + height);
+        }
+        int[] out = new int[base.length];
+        float snowLevel = clamp01(snow);
+        if (snowLevel <= 0.0F) {
+            return out;
+        }
+        int block = Math.max(1, width / 64);
+        long snowSeed = seed ^ 0x5DEECE66DL;
+        float[] noise = new float[base.length];
+        boolean[] covered = coverage(base, map, snowLevel, snowSeed, block, noise);
+        for (int index = 0; index < base.length; index++) {
+            if (covered[index]) {
+                out[index] = snowPixel(base[index] >>> 24, covered, map, index, noise[index]);
+            }
+        }
+        return out;
+    }
+
     static void paintSnow(int[] pixels, FaceMap map, float snow, long seed, int block) {
+        int width = map.width();
+        float[] noise = new float[pixels.length];
+        boolean[] covered = coverage(pixels, map, snow, seed, block, noise);
+        float frost = snow > 0.5F ? (snow - 0.5F) * 0.3F : 0.0F;
+        for (int index = 0; index < pixels.length; index++) {
+            int argb = pixels[index];
+            int alpha = argb >>> 24;
+            if (alpha == 0) {
+                continue;
+            }
+            if (covered[index]) {
+                pixels[index] = snowPixel(alpha, covered, map, index, noise[index]);
+            } else if (frost > 0.0F && map.kind(index % width, index / width) != FaceMap.NONE) {
+                pixels[index] = mix(argb, FROST, frost);
+            }
+        }
+    }
+
+    private static boolean[] coverage(int[] pixels, FaceMap map, float snow, long seed, int block, float[] noise) {
         int width = map.width();
         int height = map.height();
         int cell = Math.max(2, width / 32);
         boolean[] covered = new boolean[pixels.length];
-        float[] noise = new float[pixels.length];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int index = y * width + x;
@@ -103,27 +144,17 @@ public final class CoatPainter {
                 covered[index] = isSnowCovered(map, x, y, n, snow, seed, block);
             }
         }
-        float frost = snow > 0.5F ? (snow - 0.5F) * 0.3F : 0.0F;
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int index = y * width + x;
-                int argb = pixels[index];
-                int alpha = argb >>> 24;
-                if (alpha == 0) {
-                    continue;
-                }
-                if (covered[index]) {
-                    int shade = 236 + Math.round(16.0F * noise[index]);
-                    int snowColor = pack(255, shade - 6, shade - 2, shade + 3);
-                    if (isEdge(covered, map, x, y)) {
-                        snowColor = mix(snowColor, SNOW_EDGE, 0.7F);
-                    }
-                    pixels[index] = (alpha << 24) | (snowColor & 0xFFFFFF);
-                } else if (frost > 0.0F && map.kind(x, y) != FaceMap.NONE) {
-                    pixels[index] = mix(argb, FROST, frost);
-                }
-            }
+        return covered;
+    }
+
+    private static int snowPixel(int alpha, boolean[] covered, FaceMap map, int index, float noise) {
+        int width = map.width();
+        int shade = 236 + Math.round(16.0F * noise);
+        int snowColor = pack(255, shade - 6, shade - 2, shade + 3);
+        if (isEdge(covered, map, index % width, index / width)) {
+            snowColor = mix(snowColor, SNOW_EDGE, 0.7F);
         }
+        return (alpha << 24) | (snowColor & 0xFFFFFF);
     }
 
     static boolean isSnowCovered(FaceMap map, int x, int y, float n, float snow, long seed, int block) {

@@ -3,8 +3,11 @@ package org.lts.weathercoat.render;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -27,10 +30,14 @@ public final class CoatTextures {
     private static final ModLog LOGGER = ModLog.of("Textures");
     private static final long VARIANT_TTL_MS = 60_000L;
     private static final long BASE_TTL_MS = 180_000L;
+    private static final int EVICT_EVERY_TICKS = 200;
     private static final int MAX_PIXELS = 1024 * 1024;
+    private static final int MASK_KEY = 1_000_000;
     private static final CoatTextures INSTANCE = new CoatTextures();
 
-    private final Map<BaseKey, BaseEntry> bases = new HashMap<>();
+    private final Map<Model<?>, Map<Identifier, BaseEntry>> bases = new IdentityHashMap<>();
+    private final Map<Model<?>, Map<Identifier, Integer>> shapeIds = new IdentityHashMap<>();
+    private final List<BaseEntry> retired = new ArrayList<>();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "WeatherCoat-Painter");
         thread.setDaemon(true);
@@ -39,6 +46,7 @@ public final class CoatTextures {
     });
     private int generation;
     private int nextShape;
+    private int ticks;
     private volatile boolean invalidateRequested;
 
     private CoatTextures() {
@@ -52,34 +60,13 @@ public final class CoatTextures {
         if (base == null || stages <= 0 || (wetStage <= 0 && snowStage <= 0)) {
             return base;
         }
-        if (WeatherCoatClient.MOD_ID.equals(base.getNamespace())) {
-            return base;
-        }
-        if (invalidateRequested) {
-            invalidateNow();
-        }
-        long now = System.currentTimeMillis();
-        BaseKey baseKey = new BaseKey(base, model);
-        BaseEntry entry = bases.get(baseKey);
+        BaseEntry entry = entry(base, model);
         if (entry == null) {
-            entry = new BaseEntry(baseKey, nextShape++);
-            bases.put(baseKey, entry);
-            startLoading(entry, model);
-        }
-        entry.lastUsed = now;
-        if (entry.state != State.READY) {
             return base;
         }
-        int wet = Math.round(100.0F * Math.min(wetStage, stages) / stages);
-        int snow = Math.round(100.0F * Math.min(snowStage, stages) / stages);
-        int key = wet * 1000 + snow;
-        Variant variant = entry.variants.get(key);
-        if (variant == null) {
-            variant = new Variant(variantId(base, entry.shape, wet, snow), wet, snow);
-            entry.variants.put(key, variant);
-            startPainting(entry, variant);
-        }
-        variant.lastUsed = now;
+        int wet = percent(wetStage, stages);
+        int snow = percent(snowStage, stages);
+        Variant variant = variant(entry, wet, snow, false);
         if (variant.ready) {
             return variant.id;
         }
@@ -87,8 +74,74 @@ public final class CoatTextures {
         if (fallback == null) {
             return base;
         }
-        fallback.lastUsed = now;
+        fallback.lastUsed = System.currentTimeMillis();
         return fallback.id;
+    }
+
+    public Identifier resolveSnowMask(Identifier base, Model<?> model, int snowStage, int stages) {
+        if (base == null || stages <= 0 || snowStage <= 0) {
+            return null;
+        }
+        BaseEntry entry = entry(base, model);
+        if (entry == null) {
+            return null;
+        }
+        Variant mask = variant(entry, 0, percent(snowStage, stages), true);
+        return mask.ready ? mask.id : null;
+    }
+
+    private BaseEntry entry(Identifier base, Model<?> model) {
+        if (WeatherCoatClient.MOD_ID.equals(base.getNamespace())) {
+            return null;
+        }
+        AbstractTexture source = Minecraft.getInstance().getTextureManager().getTexture(base);
+        Map<Identifier, BaseEntry> byTexture = bases.computeIfAbsent(model, ignored -> new HashMap<>());
+        BaseEntry entry = byTexture.get(base);
+        if (entry != null && entry.source != source) {
+            retired.add(entry);
+            entry = null;
+        }
+        if (entry == null) {
+            entry = new BaseEntry(base, model, source, shapeId(base, model, source));
+            byTexture.put(base, entry);
+            startLoading(entry, model);
+        }
+        entry.lastUsed = System.currentTimeMillis();
+        return entry.state == State.READY ? entry : null;
+    }
+
+    private int shapeId(Identifier base, Model<?> model, AbstractTexture source) {
+        Map<Identifier, Integer> byTexture = shapeIds.computeIfAbsent(model, ignored -> new HashMap<>());
+        Integer known = byTexture.get(base);
+        boolean replaced = false;
+        for (BaseEntry old : retired) {
+            if (old.base.equals(base) && old.model == model && old.source != source) {
+                replaced = true;
+                break;
+            }
+        }
+        if (known != null && !replaced) {
+            return known;
+        }
+        int id = nextShape++;
+        byTexture.put(base, id);
+        return id;
+    }
+
+    private Variant variant(BaseEntry entry, int wet, int snow, boolean mask) {
+        int key = (mask ? MASK_KEY : 0) + wet * 1000 + snow;
+        Variant variant = entry.variants.get(key);
+        if (variant == null) {
+            variant = new Variant(variantId(entry, wet, snow, mask), key, wet, snow, mask);
+            entry.variants.put(key, variant);
+            startPainting(entry, variant);
+        }
+        variant.lastUsed = System.currentTimeMillis();
+        return variant;
+    }
+
+    private static int percent(int stage, int stages) {
+        return Math.round(100.0F * Math.max(0, Math.min(stage, stages)) / stages);
     }
 
     private void startLoading(BaseEntry entry, Model<?> model) {
@@ -99,12 +152,10 @@ public final class CoatTextures {
             LOGGER.warn("Could not read the model shape for {}; painting without it", entry.base, exception);
             faces = ModelShape.EMPTY;
         }
-        Minecraft minecraft = Minecraft.getInstance();
         int[] dynamicPixels = null;
         int dynamicWidth = 0;
         int dynamicHeight = 0;
-        AbstractTexture texture = minecraft.getTextureManager().getTexture(entry.base);
-        if (texture instanceof DynamicTexture dynamic && dynamic.getPixels() != null) {
+        if (entry.source instanceof DynamicTexture dynamic && dynamic.getPixels() != null) {
             NativeImage image = dynamic.getPixels();
             dynamicWidth = image.getWidth();
             dynamicHeight = image.getHeight();
@@ -117,11 +168,11 @@ public final class CoatTextures {
         int[] copied = dynamicPixels;
         int copiedWidth = dynamicWidth;
         int copiedHeight = dynamicHeight;
-        submit(() -> {
+        submit(entry, () -> {
             Pixels pixels = copied != null ? new Pixels(copiedWidth, copiedHeight, copied) : readResource(entry.base);
             FaceMap map = pixels == null ? null : shape.map(pixels.width, pixels.height);
-            minecraft.execute(() -> {
-                if (expected != generation || bases.get(entry.key) != entry) {
+            Minecraft.getInstance().execute(() -> {
+                if (!isCurrent(entry, expected)) {
                     return;
                 }
                 if (pixels == null) {
@@ -132,7 +183,7 @@ public final class CoatTextures {
                 entry.faces = map;
                 entry.state = State.READY;
             });
-        }, entry);
+        }, () -> entry.state = State.FAILED);
     }
 
     private void startPainting(BaseEntry entry, Variant variant) {
@@ -140,15 +191,24 @@ public final class CoatTextures {
         FaceMap map = entry.faces;
         int expected = generation;
         long seed = entry.base.toString().hashCode() * 0x9E3779B9L;
-        submit(() -> {
-            int[] painted = CoatPainter.paint(pixels.argb, map, variant.wet / 100.0F, variant.snow / 100.0F, seed);
-            Minecraft minecraft = Minecraft.getInstance();
-            minecraft.execute(() -> upload(entry, variant, pixels, painted, expected));
-        }, entry);
+        submit(entry, () -> {
+            int[] painted = variant.mask
+                    ? CoatPainter.snowMask(pixels.argb, map, variant.snow / 100.0F, seed)
+                    : CoatPainter.paint(pixels.argb, map, variant.wet / 100.0F, variant.snow / 100.0F, seed);
+            Minecraft.getInstance().execute(() -> upload(entry, variant, pixels, painted, expected));
+        }, () -> entry.variants.remove(variant.key, variant));
+    }
+
+    private boolean isCurrent(BaseEntry entry, int expected) {
+        if (expected != generation) {
+            return false;
+        }
+        Map<Identifier, BaseEntry> byTexture = bases.get(entry.model);
+        return byTexture != null && byTexture.get(entry.base) == entry;
     }
 
     private void upload(BaseEntry entry, Variant variant, Pixels pixels, int[] painted, int expected) {
-        if (expected != generation || bases.get(entry.key) != entry || entry.variants.get(variant.key()) != variant) {
+        if (!isCurrent(entry, expected) || entry.variants.get(variant.key) != variant) {
             return;
         }
         NativeImage image = new NativeImage(pixels.width, pixels.height, false);
@@ -165,27 +225,27 @@ public final class CoatTextures {
         } catch (RuntimeException exception) {
             image.close();
             LOGGER.warn("Could not upload {}", variant.id, exception);
-            entry.variants.remove(variant.key());
+            entry.variants.remove(variant.key);
         }
     }
 
-    private void submit(Runnable job, BaseEntry entry) {
+    private void submit(BaseEntry entry, Runnable job, Runnable onFailure) {
         try {
             worker.execute(() -> {
                 try {
                     job.run();
-                } catch (RuntimeException exception) {
+                } catch (RuntimeException | OutOfMemoryError exception) {
                     LOGGER.warn("Could not paint the weather coat for {}", entry.base, exception);
+                    Minecraft.getInstance().execute(onFailure);
                 }
             });
         } catch (RejectedExecutionException exception) {
-            entry.state = State.FAILED;
+            onFailure.run();
         }
     }
 
     private static Pixels readResource(Identifier id) {
-        Minecraft minecraft = Minecraft.getInstance();
-        Optional<Resource> resource = minecraft.getResourceManager().getResource(id);
+        Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(id);
         if (resource.isEmpty()) {
             LOGGER.debug("No texture file for {}; the coat stays off for it", id);
             return null;
@@ -204,13 +264,14 @@ public final class CoatTextures {
         }
     }
 
-    private static Identifier variantId(Identifier base, int shape, int wet, int snow) {
-        String path = base.getPath();
+    private static Identifier variantId(BaseEntry entry, int wet, int snow, boolean mask) {
+        String path = entry.base.getPath();
         if (path.endsWith(".png")) {
             path = path.substring(0, path.length() - 4);
         }
+        String leaf = mask ? String.format(Locale.ROOT, "snow%d", snow) : String.format(Locale.ROOT, "w%d_s%d", wet, snow);
         return Identifier.fromNamespaceAndPath(WeatherCoatClient.MOD_ID,
-                String.format(Locale.ROOT, "coat/%s/%s/m%d/w%d_s%d", base.getNamespace(), path, shape, wet, snow));
+                String.format(Locale.ROOT, "coat/%s/%s/m%d/%s", entry.base.getNamespace(), path, entry.shape, leaf));
     }
 
     public void tick() {
@@ -218,20 +279,35 @@ public final class CoatTextures {
             invalidateNow();
             return;
         }
+        for (BaseEntry entry : retired) {
+            releaseAll(entry);
+        }
+        retired.clear();
+        if (++ticks < EVICT_EVERY_TICKS) {
+            return;
+        }
+        ticks = 0;
         long now = System.currentTimeMillis();
-        Iterator<BaseEntry> entries = bases.values().iterator();
-        while (entries.hasNext()) {
-            BaseEntry entry = entries.next();
-            Iterator<Variant> variants = entry.variants.values().iterator();
-            while (variants.hasNext()) {
-                Variant variant = variants.next();
-                if (now - variant.lastUsed > VARIANT_TTL_MS) {
-                    release(variant);
-                    variants.remove();
+        Iterator<Map<Identifier, BaseEntry>> models = bases.values().iterator();
+        while (models.hasNext()) {
+            Map<Identifier, BaseEntry> byTexture = models.next();
+            Iterator<BaseEntry> entries = byTexture.values().iterator();
+            while (entries.hasNext()) {
+                BaseEntry entry = entries.next();
+                Iterator<Variant> variants = entry.variants.values().iterator();
+                while (variants.hasNext()) {
+                    Variant variant = variants.next();
+                    if (now - variant.lastUsed > VARIANT_TTL_MS) {
+                        release(variant);
+                        variants.remove();
+                    }
+                }
+                if (entry.variants.isEmpty() && now - entry.lastUsed > BASE_TTL_MS) {
+                    entries.remove();
                 }
             }
-            if (entry.variants.isEmpty() && now - entry.lastUsed > BASE_TTL_MS) {
-                entries.remove();
+            if (byTexture.isEmpty()) {
+                models.remove();
             }
         }
     }
@@ -241,19 +317,34 @@ public final class CoatTextures {
     }
 
     public void clear() {
-        invalidateNow();
+        if (!bases.isEmpty() || !retired.isEmpty() || invalidateRequested) {
+            invalidateNow();
+        }
     }
 
     private void invalidateNow() {
         invalidateRequested = false;
         generation++;
-        for (BaseEntry entry : bases.values()) {
-            for (Variant variant : entry.variants.values()) {
-                release(variant);
+        for (Map<Identifier, BaseEntry> byTexture : bases.values()) {
+            for (BaseEntry entry : byTexture.values()) {
+                releaseAll(entry);
             }
         }
+        for (BaseEntry entry : retired) {
+            releaseAll(entry);
+        }
+        retired.clear();
         bases.clear();
+        shapeIds.clear();
         nextShape = 0;
+        ticks = 0;
+    }
+
+    private static void releaseAll(BaseEntry entry) {
+        for (Variant variant : entry.variants.values()) {
+            release(variant);
+        }
+        entry.variants.clear();
     }
 
     private static void release(Variant variant) {
@@ -261,18 +352,6 @@ public final class CoatTextures {
             Minecraft.getInstance().getTextureManager().release(variant.id);
             variant.ready = false;
         }
-    }
-
-    public int textureCount() {
-        int count = 0;
-        for (BaseEntry entry : bases.values()) {
-            for (Variant variant : entry.variants.values()) {
-                if (variant.ready) {
-                    count++;
-                }
-            }
-        }
-        return count;
     }
 
     public void shutdown() {
@@ -288,12 +367,10 @@ public final class CoatTextures {
     private record Pixels(int width, int height, int[] argb) {
     }
 
-    private record BaseKey(Identifier texture, Model<?> model) {
-    }
-
     private static final class BaseEntry {
-        final BaseKey key;
         final Identifier base;
+        final Model<?> model;
+        final AbstractTexture source;
         final int shape;
         final Map<Integer, Variant> variants = new HashMap<>();
         State state = State.LOADING;
@@ -301,9 +378,10 @@ public final class CoatTextures {
         FaceMap faces;
         long lastUsed;
 
-        BaseEntry(BaseKey key, int shape) {
-            this.key = key;
-            this.base = key.texture();
+        BaseEntry(Identifier base, Model<?> model, AbstractTexture source, int shape) {
+            this.base = base;
+            this.model = model;
+            this.source = source;
             this.shape = shape;
         }
 
@@ -311,7 +389,7 @@ public final class CoatTextures {
             Variant best = null;
             int bestDistance = Integer.MAX_VALUE;
             for (Variant variant : variants.values()) {
-                if (!variant.ready) {
+                if (!variant.ready || variant.mask) {
                     continue;
                 }
                 int distance = Math.abs(variant.wet - wet) + Math.abs(variant.snow - snow);
@@ -326,19 +404,19 @@ public final class CoatTextures {
 
     private static final class Variant {
         final Identifier id;
+        final int key;
         final int wet;
         final int snow;
+        final boolean mask;
         boolean ready;
         long lastUsed;
 
-        Variant(Identifier id, int wet, int snow) {
+        Variant(Identifier id, int key, int wet, int snow, boolean mask) {
             this.id = id;
+            this.key = key;
             this.wet = wet;
             this.snow = snow;
-        }
-
-        int key() {
-            return wet * 1000 + snow;
+            this.mask = mask;
         }
     }
 }
