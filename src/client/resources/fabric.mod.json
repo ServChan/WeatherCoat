@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "weathercoat",
+  "version": "${version}",
+  "name": "Weather Coat",
+  "description": "Mobs and players get wet in the rain and snowy in the snow, step by step, and dry off or melt afterwards.",
+  "authors": [
+    "LTS_Server"
+  ],
+  "license": "MIT",
+  "icon": "assets/weathercoat/icon.png",
+  "environment": "client",
+  "mixins": [
+    "weathercoat.client.mixins.json"
+  ],
+  "entrypoints": {
+    "client": [
+      "org.lts.weathercoat.WeatherCoatClient"
+    ],
+    "modmenu": [
+      "org.lts.weathercoat.compat.WeatherCoatModMenu"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-lifecycle-events-v1": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}

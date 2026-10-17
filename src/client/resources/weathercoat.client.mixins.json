@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "org.lts.weathercoat.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "LivingEntityRenderStateMixin",
+    "LivingEntityRendererMixin",
+    "ModelPartAccessor",
+    "RenderLayerMixin",
+    "TextureManagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
