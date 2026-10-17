@@ -30,7 +30,7 @@ public final class CoatTextures {
     private static final int MAX_PIXELS = 1024 * 1024;
     private static final CoatTextures INSTANCE = new CoatTextures();
 
-    private final Map<Identifier, BaseEntry> bases = new HashMap<>();
+    private final Map<BaseKey, BaseEntry> bases = new HashMap<>();
     private final ExecutorService worker = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "WeatherCoat-Painter");
         thread.setDaemon(true);
@@ -38,6 +38,7 @@ public final class CoatTextures {
         return thread;
     });
     private int generation;
+    private int nextShape;
     private volatile boolean invalidateRequested;
 
     private CoatTextures() {
@@ -58,10 +59,11 @@ public final class CoatTextures {
             invalidateNow();
         }
         long now = System.currentTimeMillis();
-        BaseEntry entry = bases.get(base);
+        BaseKey baseKey = new BaseKey(base, model);
+        BaseEntry entry = bases.get(baseKey);
         if (entry == null) {
-            entry = new BaseEntry(base);
-            bases.put(base, entry);
+            entry = new BaseEntry(baseKey, nextShape++);
+            bases.put(baseKey, entry);
             startLoading(entry, model);
         }
         entry.lastUsed = now;
@@ -73,7 +75,7 @@ public final class CoatTextures {
         int key = wet * 1000 + snow;
         Variant variant = entry.variants.get(key);
         if (variant == null) {
-            variant = new Variant(variantId(base, wet, snow), wet, snow);
+            variant = new Variant(variantId(base, entry.shape, wet, snow), wet, snow);
             entry.variants.put(key, variant);
             startPainting(entry, variant);
         }
@@ -119,7 +121,7 @@ public final class CoatTextures {
             Pixels pixels = copied != null ? new Pixels(copiedWidth, copiedHeight, copied) : readResource(entry.base);
             FaceMap map = pixels == null ? null : shape.map(pixels.width, pixels.height);
             minecraft.execute(() -> {
-                if (expected != generation || bases.get(entry.base) != entry) {
+                if (expected != generation || bases.get(entry.key) != entry) {
                     return;
                 }
                 if (pixels == null) {
@@ -146,7 +148,7 @@ public final class CoatTextures {
     }
 
     private void upload(BaseEntry entry, Variant variant, Pixels pixels, int[] painted, int expected) {
-        if (expected != generation || bases.get(entry.base) != entry || entry.variants.get(variant.key()) != variant) {
+        if (expected != generation || bases.get(entry.key) != entry || entry.variants.get(variant.key()) != variant) {
             return;
         }
         NativeImage image = new NativeImage(pixels.width, pixels.height, false);
@@ -202,13 +204,13 @@ public final class CoatTextures {
         }
     }
 
-    private static Identifier variantId(Identifier base, int wet, int snow) {
+    private static Identifier variantId(Identifier base, int shape, int wet, int snow) {
         String path = base.getPath();
         if (path.endsWith(".png")) {
             path = path.substring(0, path.length() - 4);
         }
         return Identifier.fromNamespaceAndPath(WeatherCoatClient.MOD_ID,
-                String.format(Locale.ROOT, "coat/%s/%s/w%d_s%d", base.getNamespace(), path, wet, snow));
+                String.format(Locale.ROOT, "coat/%s/%s/m%d/w%d_s%d", base.getNamespace(), path, shape, wet, snow));
     }
 
     public void tick() {
@@ -251,6 +253,7 @@ public final class CoatTextures {
             }
         }
         bases.clear();
+        nextShape = 0;
     }
 
     private static void release(Variant variant) {
@@ -285,16 +288,23 @@ public final class CoatTextures {
     private record Pixels(int width, int height, int[] argb) {
     }
 
+    private record BaseKey(Identifier texture, Model<?> model) {
+    }
+
     private static final class BaseEntry {
+        final BaseKey key;
         final Identifier base;
+        final int shape;
         final Map<Integer, Variant> variants = new HashMap<>();
         State state = State.LOADING;
         Pixels pixels;
         FaceMap faces;
         long lastUsed;
 
-        BaseEntry(Identifier base) {
-            this.base = base;
+        BaseEntry(BaseKey key, int shape) {
+            this.key = key;
+            this.base = key.texture();
+            this.shape = shape;
         }
 
         Variant closestReady(int wet, int snow) {
