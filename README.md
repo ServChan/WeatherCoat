@@ -24,6 +24,12 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 - скины игроков обрабатываются так же, как текстуры мобов;
 - экипировка мокнет и заснеживается вместе с хозяином: броня игроков и мобов, сёдла свиней, лошадей и страйдеров, конская, волчья и наутилусовая броня, ковры лам, сбруя гаста, элитры; отделка брони (узоры) остаётся как есть;
 - снег только там, где он реально идёт (холодные биомы), дождь — где идёт дождь; под крышей стадия не растёт; в воде моб не сохнет; огонь и лава сразу высушивают и растапливают; в тёплых биомах снег тает вдвое быстрее, гроза мочит быстрее;
+- **Иней**: замерзающие в порошковом снегу мобы и игроки голубеют и покрываются ледяными кристаллами, а сам порошковый снег сразу облепляет снегом;
+- **Климат и тепло**: в пустыне и бесплодных землях, на солнце и рядом с огнём, лавой, костром, магмой или горящей печью моб сохнет и оттаивает быстрее, в болоте и джунглях сохнет медленнее; идущий моб стряхивает снег;
+- **Частицы**: с мокрых мобов падают капли, с идущих заснеженных слетают снежинки, у тепла поднимается пар; волк, отряхнувшись, сразу сухой;
+- **Руки от первого лица** мокнут и покрываются инеем вместе с телом;
+- водные мобы (рыбы, кальмары, дельфины, аксолотли, наутилусы) и огнестойкие (ифриты, гасты, магмовые кубы, лавомерки) по умолчанию не меняются; стражи, снежные големы, тихони и досаждатели исключены списком, который можно менять в настройках;
+- **Entity Texture Features**: случайные текстуры ETF сохраняются и тоже намокают; **Entity Model Features**: форма берётся с модели EMF;
 - **Догонять при появлении**: моб, попавший в поле зрения посреди долгого дождя, сразу выглядит мокрым;
 - генерация идёт в фоновом потоке, неиспользуемые текстуры освобождаются через минуту, при смене ресурспаков всё пересоздаётся.
 
@@ -33,7 +39,7 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 
 ### Настройки
 
-Экран **Mod Menu → Weather Coat**: включение, игроки, число стадий, «догонять при появлении», дальность обновления, отдельные переключатели и время на стадию для намокания, высыхания, снега и таяния. Файл `config/weathercoat.json` (атомарная запись, резервная копия `.bak`).
+Экран **Mod Menu → Weather Coat**: включение, игроки, число стадий, «догонять при появлении», дальность обновления, отдельные переключатели и время на стадию для намокания, высыхания, снега и таяния, иней, климат, частицы, пропуск водных и огненных мобов и список исключённых мобов. Файл `config/weathercoat.json` (атомарная запись, резервная копия `.bak`).
 
 ### Установка
 
@@ -69,6 +75,12 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 - player skins are handled just like mob textures;
 - equipment gets wet and snowy along with its wearer: player and mob armor, pig, horse and strider saddles, horse, wolf and nautilus armor, llama carpets, happy ghast harnesses, elytra; armor trims keep their look;
 - snow only where it actually snows (cold biomes), rain only where it rains; stages do not grow under a roof; mobs do not dry while in water; fire and lava dry and melt everything at once; snow melts twice as fast in warm biomes, and thunderstorms soak faster;
+- **Frost**: mobs and players freezing in powder snow turn icy blue with ice crystals, and powder snow itself covers them in snow at once;
+- **Climate and heat**: deserts, badlands, sunshine and nearby fire, lava, campfires, magma or lit furnaces dry and melt faster, swamps and jungles dry slower; walking mobs shake snow off;
+- **Particles**: drops fall from wet mobs, snowflakes fall off walking snowy mobs, drying near heat gives off steam; a wolf is dry right after it shakes;
+- **First-person hands** get wet and frosty along with the body;
+- water creatures (fish, squid, dolphins, axolotls, nautiluses) and fire-immune ones (blazes, ghasts, magma cubes, striders) keep their look by default; guardians, snow golems, allays and vexes are excluded by a list you can change in the settings;
+- **Entity Texture Features**: ETF random textures are kept and get wet too; **Entity Model Features**: the shape comes from the EMF model;
 - **Catch up on sight**: a mob that comes into view in the middle of a long rain looks wet right away;
 - generation runs on a background thread, unused textures are released after a minute, and everything is rebuilt when resource packs change.
 
@@ -78,7 +90,7 @@ There are no keys: the effect runs on its own. Settings are in Mod Menu.
 
 ### Configuration
 
-The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, catch up on sight, update distance, and separate toggles and time per stage for wetting, drying, snow, and melting. `config/weathercoat.json` (atomic write, `.bak` backup).
+The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, catch up on sight, update distance, separate toggles and time per stage for wetting, drying, snow, and melting, frost, climate, particles, skipping water and fire creatures, and the list of excluded mobs. `config/weathercoat.json` (atomic write, `.bak` backup).
 
 ### Installation
 

@@ -3,6 +3,7 @@
   "package": "org.lts.weathercoat.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "AvatarRendererMixin",
     "CapeLayerMixin",
     "EquipmentLayerRendererMixin",
     "HorseMarkingLayerMixin",

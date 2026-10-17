@@ -9,12 +9,20 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import net.fabricmc.loader.api.FabricLoader;
 
 public final class WeatherCoatConfig {
     public static final int MIN_STAGES = 3;
     public static final int MAX_STAGES = 5;
-    private static final int CURRENT_CONFIG_VERSION = 1;
+    public static final int MAX_EXCLUDED = 512;
+    public static final List<String> DEFAULT_EXCLUDED = List.of(
+            "minecraft:guardian", "minecraft:elder_guardian", "minecraft:snow_golem", "minecraft:allay", "minecraft:vex");
+    private static final int CURRENT_CONFIG_VERSION = 2;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile WeatherCoatConfig current = defaults();
 
@@ -30,6 +38,12 @@ public final class WeatherCoatConfig {
     public int snowSecondsPerStage = 20;
     public int meltSecondsPerStage = 40;
     public int maxDistance = 64;
+    public boolean frostEnabled = true;
+    public boolean climateEnabled = true;
+    public boolean particlesEnabled = true;
+    public boolean skipAquatic = true;
+    public boolean skipFireproof = true;
+    public List<String> excludedEntities = new ArrayList<>(DEFAULT_EXCLUDED);
 
     public static void load() {
         Path configPath = configPath();
@@ -133,7 +147,31 @@ public final class WeatherCoatConfig {
         config.snowSecondsPerStage = clamp(config.snowSecondsPerStage, 2, 300);
         config.meltSecondsPerStage = clamp(config.meltSecondsPerStage, 2, 600);
         config.maxDistance = clamp(config.maxDistance, 16, 256);
+        config.excludedEntities = normalizeIds(config.excludedEntities);
         return config;
+    }
+
+    static List<String> normalizeIds(List<String> ids) {
+        if (ids == null) {
+            return new ArrayList<>(DEFAULT_EXCLUDED);
+        }
+        Set<String> unique = new LinkedHashSet<>();
+        for (String id : ids) {
+            if (id == null) {
+                continue;
+            }
+            String clean = id.trim().toLowerCase(Locale.ROOT);
+            if (clean.isEmpty()) {
+                continue;
+            }
+            if (clean.indexOf(':') < 0) {
+                clean = "minecraft:" + clean;
+            }
+            if (clean.matches("[a-z0-9_.-]+:[a-z0-9_./-]+") && unique.size() < MAX_EXCLUDED) {
+                unique.add(clean);
+            }
+        }
+        return new ArrayList<>(unique);
     }
 
     private static WeatherCoatConfig copyOf(WeatherCoatConfig config) {

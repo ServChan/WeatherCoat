@@ -19,8 +19,15 @@ public final class Coats {
         if (!(state instanceof CoatRenderState coat) || coat.weathercoat$stages() <= 0) {
             return texture;
         }
-        return CoatTextures.get().resolve(texture, model, coat.weathercoat$wetStage(), coat.weathercoat$snowStage(),
+        return texture(texture, model, coat.weathercoat$wetStage(), coat.weathercoat$snowStage(), coat.weathercoat$frostStage(),
                 coat.weathercoat$stages());
+    }
+
+    public static Identifier texture(Identifier texture, Model<?> model, int wetStage, int snowStage, int frostStage, int stages) {
+        if (stages <= 0 || (wetStage <= 0 && snowStage <= 0 && frostStage <= 0)) {
+            return texture;
+        }
+        return CoatTextures.get().resolve(TextureFeatures.variantOf(texture), model, wetStage, snowStage, frostStage, stages);
     }
 
     public static boolean isTinted(int color) {
@@ -32,7 +39,8 @@ public final class Coats {
         if (!(state instanceof CoatRenderState coat) || coat.weathercoat$snowStage() <= 0) {
             return;
         }
-        Identifier mask = CoatTextures.get().resolveSnowMask(texture, model, coat.weathercoat$snowStage(), coat.weathercoat$stages());
+        Identifier mask = CoatTextures.get().resolveSnowMask(TextureFeatures.variantOf(texture), model, coat.weathercoat$snowStage(),
+                coat.weathercoat$stages());
         if (mask == null) {
             return;
         }

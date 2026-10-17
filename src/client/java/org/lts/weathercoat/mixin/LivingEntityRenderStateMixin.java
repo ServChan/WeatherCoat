@@ -12,6 +12,8 @@ public abstract class LivingEntityRenderStateMixin implements CoatRenderState {
     @Unique
     private int weathercoat$snow;
     @Unique
+    private int weathercoat$frost;
+    @Unique
     private int weathercoat$stageCount;
 
     @Override
@@ -25,14 +27,20 @@ public abstract class LivingEntityRenderStateMixin implements CoatRenderState {
     }
 
     @Override
+    public int weathercoat$frostStage() {
+        return weathercoat$frost;
+    }
+
+    @Override
     public int weathercoat$stages() {
         return weathercoat$stageCount;
     }
 
     @Override
-    public void weathercoat$setCoat(int wetStage, int snowStage, int stages) {
+    public void weathercoat$setCoat(int wetStage, int snowStage, int frostStage, int stages) {
         weathercoat$wet = wetStage;
         weathercoat$snow = snowStage;
+        weathercoat$frost = frostStage;
         weathercoat$stageCount = stages;
     }
 }

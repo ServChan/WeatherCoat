@@ -29,10 +29,10 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity, S extend
         WeatherCoatConfig config = WeatherCoatConfig.current();
         CoatProgress coat = config.enabled ? CoatTracker.get().coatOf(entity) : null;
         if (coat == null) {
-            coatState.weathercoat$setCoat(0, 0, 0);
+            coatState.weathercoat$setCoat(0, 0, 0, 0);
             return;
         }
-        coatState.weathercoat$setCoat(coat.wetStage(), coat.snowStage(), config.stages);
+        coatState.weathercoat$setCoat(coat.wetStage(), coat.snowStage(), coat.frostStage(), config.stages);
     }
 
     @ModifyExpressionValue(method = "getRenderType(Lnet/minecraft/client/renderer/entity/state/LivingEntityRenderState;ZZZ)Lnet/minecraft/client/renderer/rendertype/RenderType;",

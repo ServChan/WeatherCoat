@@ -166,4 +166,25 @@ class CoatPainterTest {
             assertEquals(0, pixel);
         }
     }
+
+    @Test
+    void frostTintsColdAndAddsCrystals() {
+        int[] base = solid(BASE);
+        int[] frosted = CoatPainter.paint(base, cube(), 0.0F, 0.0F, 1.0F, 5L);
+        double blue = 0;
+        double baseBlue = 0;
+        for (int i = 0; i < base.length; i++) {
+            blue += frosted[i] & 0xFF;
+            baseBlue += base[i] & 0xFF;
+        }
+        assertTrue(blue > baseBlue * 1.5);
+        assertTrue(snowPixels(frosted, 0, 0, SIZE, SIZE) > 0);
+    }
+
+    @Test
+    void frostKeepsTransparency() {
+        int[] base = solid(BASE);
+        base[9] = 0;
+        assertEquals(0, CoatPainter.paint(base, cube(), 0.0F, 0.0F, 1.0F, 5L)[9]);
+    }
 }

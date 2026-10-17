@@ -66,6 +66,23 @@ public final class WeatherCoatConfigScreen extends Screen {
                 value -> working.snowSecondsPerStage = value, () -> working.enabled && working.snowEnabled);
         seconds("weathercoat.option.melt_time", FADE_SECONDS, () -> working.meltSecondsPerStage,
                 value -> working.meltSecondsPerStage = value, () -> working.enabled && working.snowEnabled);
+        list.toggle(Component.translatable("weathercoat.option.frost"), Component.translatable("weathercoat.option.frost.tip"),
+                () -> working.frostEnabled, value -> working.frostEnabled = value, () -> working.enabled);
+
+        list.header(Component.translatable("weathercoat.section.world"));
+        list.toggle(Component.translatable("weathercoat.option.climate"), Component.translatable("weathercoat.option.climate.tip"),
+                () -> working.climateEnabled, value -> working.climateEnabled = value, () -> working.enabled);
+        list.toggle(Component.translatable("weathercoat.option.particles"), Component.translatable("weathercoat.option.particles.tip"),
+                () -> working.particlesEnabled, value -> working.particlesEnabled = value, () -> working.enabled);
+
+        list.header(Component.translatable("weathercoat.section.mobs"));
+        list.toggle(Component.translatable("weathercoat.option.skip_aquatic"), Component.translatable("weathercoat.option.skip_aquatic.tip"),
+                () -> working.skipAquatic, value -> working.skipAquatic = value, () -> working.enabled);
+        list.toggle(Component.translatable("weathercoat.option.skip_fireproof"), Component.translatable("weathercoat.option.skip_fireproof.tip"),
+                () -> working.skipFireproof, value -> working.skipFireproof = value, () -> working.enabled);
+        list.action(Component.translatable("weathercoat.option.excluded"), Component.translatable("weathercoat.option.excluded.tip"),
+                () -> Component.translatable("weathercoat.excluded.count", working.excludedEntities.size()),
+                () -> this.minecraft.setScreenAndShow(new ExclusionsScreen(this, working)), () -> working.enabled);
 
         list.refresh();
         addRenderableWidget(list);

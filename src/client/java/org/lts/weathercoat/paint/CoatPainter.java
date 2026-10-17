@@ -5,11 +5,18 @@ public final class CoatPainter {
     private static final int SHEEN = 0xFFFFFFFF;
     private static final int SNOW_EDGE = 0xFFC9D5E6;
     private static final int FROST = 0xFFE4EAF4;
+    private static final int ICE_TINT = 0xFFBFDDF2;
+    private static final int ICE_CRYSTAL = 0xFFF4FBFF;
+    private static final long FROST_SALT = 0x2545F4914F6CDD1DL;
 
     private CoatPainter() {
     }
 
     public static int[] paint(int[] base, FaceMap map, float wet, float snow, long seed) {
+        return paint(base, map, wet, snow, 0.0F, seed);
+    }
+
+    public static int[] paint(int[] base, FaceMap map, float wet, float snow, float frost, long seed) {
         int width = map.width();
         int height = map.height();
         if (base.length != width * height) {
@@ -18,9 +25,13 @@ public final class CoatPainter {
         int[] out = base.clone();
         float wetLevel = clamp01(wet);
         float snowLevel = clamp01(snow);
+        float frostLevel = clamp01(frost);
         int block = Math.max(1, width / 64);
         if (wetLevel > 0.0F) {
             paintWet(out, map, wetLevel, seed, block);
+        }
+        if (frostLevel > 0.0F) {
+            paintFrost(out, map, frostLevel, seed ^ FROST_SALT, block);
         }
         if (snowLevel > 0.0F) {
             paintSnow(out, map, snowLevel, seed ^ 0x5DEECE66DL, block);
@@ -69,6 +80,35 @@ public final class CoatPainter {
                 pixels[index] = color;
             }
         }
+    }
+
+    static void paintFrost(int[] pixels, FaceMap map, float frost, long seed, int block) {
+        int width = map.width();
+        int height = map.height();
+        float crystalChance = 0.04F + 0.18F * frost;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int index = y * width + x;
+                int argb = pixels[index];
+                if ((argb >>> 24) == 0) {
+                    continue;
+                }
+                int color = mix(argb, ICE_TINT, 0.3F * frost);
+                byte kind = map.kind(x, y);
+                if (kind != FaceMap.NONE) {
+                    if (Noise.hash(x / block, y / block, seed) < crystalChance) {
+                        color = mix(color, ICE_CRYSTAL, 0.75F);
+                    } else if (isFaceBorder(map, x, y, kind)) {
+                        color = mix(color, ICE_CRYSTAL, 0.5F * frost);
+                    }
+                }
+                pixels[index] = color;
+            }
+        }
+    }
+
+    private static boolean isFaceBorder(FaceMap map, int x, int y, byte kind) {
+        return map.kind(x + 1, y) != kind || map.kind(x - 1, y) != kind || map.kind(x, y + 1) != kind || map.kind(x, y - 1) != kind;
     }
 
     static float streakLength(int column, long seed, float wet) {

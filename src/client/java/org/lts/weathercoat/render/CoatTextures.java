@@ -32,7 +32,7 @@ public final class CoatTextures {
     private static final long BASE_TTL_MS = 180_000L;
     private static final int EVICT_EVERY_TICKS = 200;
     private static final int MAX_PIXELS = 1024 * 1024;
-    private static final int MASK_KEY = 1_000_000;
+    private static final int MASK_KEY = 2_000_000;
     private static final CoatTextures INSTANCE = new CoatTextures();
 
     private final Map<Model<?>, Map<Identifier, BaseEntry>> bases = new IdentityHashMap<>();
@@ -56,8 +56,8 @@ public final class CoatTextures {
         return INSTANCE;
     }
 
-    public Identifier resolve(Identifier base, Model<?> model, int wetStage, int snowStage, int stages) {
-        if (base == null || stages <= 0 || (wetStage <= 0 && snowStage <= 0)) {
+    public Identifier resolve(Identifier base, Model<?> model, int wetStage, int snowStage, int frostStage, int stages) {
+        if (base == null || stages <= 0 || (wetStage <= 0 && snowStage <= 0 && frostStage <= 0)) {
             return base;
         }
         BaseEntry entry = entry(base, model);
@@ -66,11 +66,12 @@ public final class CoatTextures {
         }
         int wet = percent(wetStage, stages);
         int snow = percent(snowStage, stages);
-        Variant variant = variant(entry, wet, snow, false);
+        int frost = percent(frostStage, stages);
+        Variant variant = variant(entry, wet, snow, frost, false);
         if (variant.ready) {
             return variant.id;
         }
-        Variant fallback = entry.closestReady(wet, snow);
+        Variant fallback = entry.closestReady(wet, snow, frost);
         if (fallback == null) {
             return base;
         }
@@ -86,7 +87,7 @@ public final class CoatTextures {
         if (entry == null) {
             return null;
         }
-        Variant mask = variant(entry, 0, percent(snowStage, stages), true);
+        Variant mask = variant(entry, 0, percent(snowStage, stages), 0, true);
         return mask.ready ? mask.id : null;
     }
 
@@ -128,11 +129,11 @@ public final class CoatTextures {
         return id;
     }
 
-    private Variant variant(BaseEntry entry, int wet, int snow, boolean mask) {
-        int key = (mask ? MASK_KEY : 0) + wet * 1000 + snow;
+    private Variant variant(BaseEntry entry, int wet, int snow, int frost, boolean mask) {
+        int key = (mask ? MASK_KEY : 0) + (wet * 101 + snow) * 101 + frost;
         Variant variant = entry.variants.get(key);
         if (variant == null) {
-            variant = new Variant(variantId(entry, wet, snow, mask), key, wet, snow, mask);
+            variant = new Variant(variantId(entry, wet, snow, frost, mask), key, wet, snow, frost, mask);
             entry.variants.put(key, variant);
             startPainting(entry, variant);
         }
@@ -194,7 +195,7 @@ public final class CoatTextures {
         submit(entry, () -> {
             int[] painted = variant.mask
                     ? CoatPainter.snowMask(pixels.argb, map, variant.snow / 100.0F, seed)
-                    : CoatPainter.paint(pixels.argb, map, variant.wet / 100.0F, variant.snow / 100.0F, seed);
+                    : CoatPainter.paint(pixels.argb, map, variant.wet / 100.0F, variant.snow / 100.0F, variant.frost / 100.0F, seed);
             Minecraft.getInstance().execute(() -> upload(entry, variant, pixels, painted, expected));
         }, () -> entry.variants.remove(variant.key, variant));
     }
@@ -264,12 +265,12 @@ public final class CoatTextures {
         }
     }
 
-    private static Identifier variantId(BaseEntry entry, int wet, int snow, boolean mask) {
+    private static Identifier variantId(BaseEntry entry, int wet, int snow, int frost, boolean mask) {
         String path = entry.base.getPath();
         if (path.endsWith(".png")) {
             path = path.substring(0, path.length() - 4);
         }
-        String leaf = mask ? String.format(Locale.ROOT, "snow%d", snow) : String.format(Locale.ROOT, "w%d_s%d", wet, snow);
+        String leaf = mask ? String.format(Locale.ROOT, "snow%d", snow) : String.format(Locale.ROOT, "w%d_s%d_f%d", wet, snow, frost);
         return Identifier.fromNamespaceAndPath(WeatherCoatClient.MOD_ID,
                 String.format(Locale.ROOT, "coat/%s/%s/m%d/%s", entry.base.getNamespace(), path, entry.shape, leaf));
     }
@@ -385,14 +386,14 @@ public final class CoatTextures {
             this.shape = shape;
         }
 
-        Variant closestReady(int wet, int snow) {
+        Variant closestReady(int wet, int snow, int frost) {
             Variant best = null;
             int bestDistance = Integer.MAX_VALUE;
             for (Variant variant : variants.values()) {
                 if (!variant.ready || variant.mask) {
                     continue;
                 }
-                int distance = Math.abs(variant.wet - wet) + Math.abs(variant.snow - snow);
+                int distance = Math.abs(variant.wet - wet) + Math.abs(variant.snow - snow) + Math.abs(variant.frost - frost);
                 if (distance < bestDistance) {
                     bestDistance = distance;
                     best = variant;
@@ -407,15 +408,17 @@ public final class CoatTextures {
         final int key;
         final int wet;
         final int snow;
+        final int frost;
         final boolean mask;
         boolean ready;
         long lastUsed;
 
-        Variant(Identifier id, int key, int wet, int snow, boolean mask) {
+        Variant(Identifier id, int key, int wet, int snow, int frost, boolean mask) {
             this.id = id;
             this.key = key;
             this.wet = wet;
             this.snow = snow;
+            this.frost = frost;
             this.mask = mask;
         }
     }

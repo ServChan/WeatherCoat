@@ -5,7 +5,9 @@ public interface CoatRenderState {
 
     int weathercoat$snowStage();
 
+    int weathercoat$frostStage();
+
     int weathercoat$stages();
 
-    void weathercoat$setCoat(int wetStage, int snowStage, int stages);
+    void weathercoat$setCoat(int wetStage, int snowStage, int frostStage, int stages);
 }

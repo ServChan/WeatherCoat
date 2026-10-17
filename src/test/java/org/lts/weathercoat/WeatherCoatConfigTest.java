@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -58,5 +60,23 @@ class WeatherCoatConfigTest {
         WeatherCoatConfig.writeAtomically(file, config, true);
         Files.writeString(file, "{ not json");
         assertEquals(5, WeatherCoatConfig.load(file).stages);
+    }
+
+    @Test
+    void excludedIdsAreNormalized() {
+        List<String> ids = WeatherCoatConfig.normalizeIds(Arrays.asList(" COW ", "minecraft:cow", "my_mod:Wisp", "bad id!", null, ""));
+        assertEquals(List.of("minecraft:cow", "my_mod:wisp"), ids);
+        assertEquals(WeatherCoatConfig.DEFAULT_EXCLUDED, WeatherCoatConfig.normalizeIds(null));
+    }
+
+    @Test
+    void versionOneFileGetsTheNewDefaults() throws Exception {
+        Path file = dir.resolve("weathercoat.json");
+        Files.writeString(file, "{\"configVersion\": 1, \"enabled\": true, \"stages\": 3}");
+        WeatherCoatConfig loaded = WeatherCoatConfig.load(file);
+        assertEquals(3, loaded.stages);
+        assertTrue(loaded.skipAquatic);
+        assertTrue(loaded.particlesEnabled);
+        assertEquals(WeatherCoatConfig.DEFAULT_EXCLUDED, loaded.excludedEntities);
     }
 }
