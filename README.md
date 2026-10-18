@@ -3,7 +3,7 @@
 [![Minecraft Version](https://img.shields.io/badge/Minecraft-26.3-brightgreen?style=flat-square&logo=minecraft)](README.md)
 [![Platform](https://img.shields.io/badge/Platform-Fabric-blue?style=flat-square&logo=fabric)](README.md)
 [![Java Target](https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk)](README.md)
-[![Mod Version](https://img.shields.io/badge/Version-1.0.0-purple?style=flat-square)](README.md)
+[![Mod Version](https://img.shields.io/badge/Version-1.0.1-purple?style=flat-square)](README.md)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 Mobs and players get wet in the rain and snowy in the snow, step by step, and dry off or melt afterwards.
@@ -44,7 +44,7 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 ### Установка
 
 1. **Fabric Loader** `0.19.3+` и **Fabric API** `0.161.0+26.3`.
-2. Скопируйте `weather-coat-1.0.0.jar` из `build/libs/` в папку `mods/`.
+2. Скопируйте `weather-coat-1.0.1.jar` из `build/libs/` в папку `mods/`.
 3. **Mod Menu** — опционально, открывает экран настроек.
 
 **Требования:** Minecraft `26.3` · Java `25` · только клиент.
@@ -55,7 +55,7 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 .\gradlew.bat clean build
 ```
 
-Готовый JAR: `build/libs/weather-coat-1.0.0.jar`.
+Готовый JAR: `build/libs/weather-coat-1.0.1.jar`.
 
 ---
 
@@ -95,7 +95,7 @@ The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, cat
 ### Installation
 
 1. **Fabric Loader** `0.19.3+` and **Fabric API** `0.161.0+26.3`.
-2. Copy `weather-coat-1.0.0.jar` from `build/libs/` into `mods/`.
+2. Copy `weather-coat-1.0.1.jar` from `build/libs/` into `mods/`.
 3. **Mod Menu** — optional, opens the settings screen.
 
 **Requirements:** Minecraft `26.3` · Java `25` · client-only.
@@ -106,7 +106,7 @@ The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, cat
 .\gradlew.bat clean build
 ```
 
-Output JAR: `build/libs/weather-coat-1.0.0.jar`.
+Output JAR: `build/libs/weather-coat-1.0.1.jar`.
 
 ## Лицензия / License
 
