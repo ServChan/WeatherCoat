@@ -20,9 +20,11 @@ public final class WeatherCoatConfig {
     public static final int MIN_STAGES = 3;
     public static final int MAX_STAGES = 5;
     public static final int MAX_EXCLUDED = 512;
+    public static final int MIN_GROUND_RADIUS = 16;
+    public static final int MAX_GROUND_RADIUS = 64;
     public static final List<String> DEFAULT_EXCLUDED = List.of(
             "minecraft:guardian", "minecraft:elder_guardian", "minecraft:snow_golem", "minecraft:allay", "minecraft:vex");
-    private static final int CURRENT_CONFIG_VERSION = 2;
+    private static final int CURRENT_CONFIG_VERSION = 3;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static volatile WeatherCoatConfig current = defaults();
 
@@ -41,6 +43,9 @@ public final class WeatherCoatConfig {
     public boolean frostEnabled = true;
     public boolean climateEnabled = true;
     public boolean particlesEnabled = true;
+    public boolean puddlesEnabled = true;
+    public boolean groundSnowEnabled = true;
+    public int groundRadius = 32;
     public boolean skipAquatic = true;
     public boolean skipFireproof = true;
     public List<String> excludedEntities = new ArrayList<>(DEFAULT_EXCLUDED);
@@ -147,6 +152,7 @@ public final class WeatherCoatConfig {
         config.snowSecondsPerStage = clamp(config.snowSecondsPerStage, 2, 300);
         config.meltSecondsPerStage = clamp(config.meltSecondsPerStage, 2, 600);
         config.maxDistance = clamp(config.maxDistance, 16, 256);
+        config.groundRadius = clamp(config.groundRadius, MIN_GROUND_RADIUS, MAX_GROUND_RADIUS);
         config.excludedEntities = normalizeIds(config.excludedEntities);
         return config;
     }

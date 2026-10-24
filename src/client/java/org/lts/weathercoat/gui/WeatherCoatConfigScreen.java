@@ -21,6 +21,7 @@ public final class WeatherCoatConfigScreen extends Screen {
     private static final List<Integer> GROW_SECONDS = List.of(5, 10, 15, 20, 30, 45, 60, 90, 120);
     private static final List<Integer> FADE_SECONDS = List.of(10, 20, 30, 40, 60, 90, 120, 180, 300);
     private static final List<Integer> DISTANCES = List.of(16, 32, 48, 64, 96, 128, 192, 256);
+    private static final List<Integer> GROUND_RADII = List.of(16, 24, 32, 48, 64);
 
     private final Screen parent;
     private WeatherCoatConfig working;
@@ -68,6 +69,16 @@ public final class WeatherCoatConfigScreen extends Screen {
                 value -> working.meltSecondsPerStage = value, () -> working.enabled && working.snowEnabled);
         list.toggle(Component.translatable("weathercoat.option.frost"), Component.translatable("weathercoat.option.frost.tip"),
                 () -> working.frostEnabled, value -> working.frostEnabled = value, () -> working.enabled);
+
+        list.header(Component.translatable("weathercoat.section.ground"));
+        list.toggle(Component.translatable("weathercoat.option.puddles"), Component.translatable("weathercoat.option.puddles.tip"),
+                () -> working.puddlesEnabled, value -> working.puddlesEnabled = value, () -> working.enabled);
+        list.toggle(Component.translatable("weathercoat.option.ground_snow"), Component.translatable("weathercoat.option.ground_snow.tip"),
+                () -> working.groundSnowEnabled, value -> working.groundSnowEnabled = value, () -> working.enabled);
+        list.cycle(Component.translatable("weathercoat.option.ground_radius"), Component.translatable("weathercoat.option.ground_radius.tip"),
+                withCurrent(GROUND_RADII, working.groundRadius), value -> Component.translatable("weathercoat.unit.blocks", value),
+                () -> working.groundRadius, value -> working.groundRadius = value,
+                () -> working.enabled && (working.puddlesEnabled || working.groundSnowEnabled));
 
         list.header(Component.translatable("weathercoat.section.world"));
         list.toggle(Component.translatable("weathercoat.option.climate"), Component.translatable("weathercoat.option.climate.tip"),

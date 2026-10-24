@@ -45,6 +45,7 @@ public final class CoatTracker {
 
     private final Int2ObjectMap<CoatProgress> coats = new Int2ObjectOpenHashMap<>();
     private final Map<EntityType<?>, Boolean> affectedTypes = new IdentityHashMap<>();
+    private final JoinCatchUp catchUp = new JoinCatchUp();
     private String typesSignature = "";
     private ClientLevel level;
     private int tick;
@@ -64,6 +65,7 @@ public final class CoatTracker {
             level = current;
             coats.clear();
             rainSeconds = 0.0F;
+            catchUp.reset();
         }
         if (current == null || !config.enabled) {
             coats.clear();
@@ -77,6 +79,10 @@ public final class CoatTracker {
         }
         tick++;
         rainSeconds = current.isRaining() ? rainSeconds + 1.0F / 20.0F : 0.0F;
+        if (catchUp.tick(current.getRainLevel(1.0F)) && config.catchUpOnSight) {
+            rainSeconds = Math.max(rainSeconds, (float) config.stages * Math.max(config.wetSecondsPerStage, config.snowSecondsPerStage));
+            coats.clear();
+        }
         Entity camera = minecraft.getCameraEntity();
         Vec3 eye = camera != null ? camera.position() : null;
         double maxDistanceSq = (double) config.maxDistance * config.maxDistance;
@@ -223,7 +229,7 @@ public final class CoatTracker {
                 || level.getBlockState(BlockPos.containing(entity.getEyePosition())).is(Blocks.POWDER_SNOW);
     }
 
-    private static boolean isHumid(Holder<Biome> biome) {
+    public static boolean isHumid(Holder<Biome> biome) {
         return biome.is(Biomes.SWAMP) || biome.is(Biomes.MANGROVE_SWAMP) || biome.is(BiomeTags.IS_JUNGLE);
     }
 

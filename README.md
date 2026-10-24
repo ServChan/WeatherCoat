@@ -3,7 +3,7 @@
 [![Minecraft Version](https://img.shields.io/badge/Minecraft-26.3-brightgreen?style=flat-square&logo=minecraft)](README.md)
 [![Platform](https://img.shields.io/badge/Platform-Fabric-blue?style=flat-square&logo=fabric)](README.md)
 [![Java Target](https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk)](README.md)
-[![Mod Version](https://img.shields.io/badge/Version-1.0.1-purple?style=flat-square)](README.md)
+[![Mod Version](https://img.shields.io/badge/Version-1.1.0-purple?style=flat-square)](README.md)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 Mobs and players get wet in the rain and snowy in the snow, step by step, and dry off or melt afterwards.
@@ -27,10 +27,12 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 - **Иней**: замерзающие в порошковом снегу мобы и игроки голубеют и покрываются ледяными кристаллами, а сам порошковый снег сразу облепляет снегом;
 - **Климат и тепло**: в пустыне и бесплодных землях, на солнце и рядом с огнём, лавой, костром, магмой или горящей печью моб сохнет и оттаивает быстрее, в болоте и джунглях сохнет медленнее; идущий моб стряхивает снег;
 - **Частицы**: с мокрых мобов падают капли, с идущих заснеженных слетают снежинки, у тепла поднимается пар; волк, отряхнувшись, сразу сухой;
+- **Лужи** (опция): под дождём на открытой земле — камне, траве, тропинках, плитах — собираются лужи, растут за несколько стадий, по ним бегут круги от капель; после дождя высыхают, на солнце и в жару быстрее. Лужи там же, где падает дождь (по карте высот, как у ванили), под крышей их нет; у края уступа лужа плавно сходит на нет, а не обрывается;
+- **Снежный налёт** (опция): в снегопад на открытую землю и кроны деревьев ложится тонкий прозрачный белый слой, сначала пятнами, потом почти сплошной; после снегопада медленно тает. Радиус эффектов на земле — 16–64 блока (по умолчанию 32);
 - **Руки от первого лица** мокнут и покрываются инеем вместе с телом;
 - водные мобы (рыбы, кальмары, дельфины, аксолотли, наутилусы) и огнестойкие (ифриты, гасты, магмовые кубы, лавомерки) по умолчанию не меняются; стражи, снежные големы, тихони и досаждатели исключены списком, который можно менять в настройках;
 - **Entity Texture Features**: случайные текстуры ETF сохраняются и тоже намокают; **Entity Model Features**: форма берётся с модели EMF;
-- **Догонять при появлении**: моб, попавший в поле зрения посреди долгого дождя, сразу выглядит мокрым;
+- **Догонять при появлении**: моб, попавший в поле зрения посреди долгого дождя, сразу выглядит мокрым; если при входе в мир (или возвращении из другого измерения) уже идёт дождь или снег, мобы, лужи и снежный налёт сразу полные;
 - генерация идёт в фоновом потоке, неиспользуемые текстуры освобождаются через минуту, при смене ресурспаков всё пересоздаётся.
 
 ### Управление
@@ -39,12 +41,12 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 
 ### Настройки
 
-Экран **Mod Menu → Weather Coat**: включение, игроки, число стадий, «догонять при появлении», дальность обновления, отдельные переключатели и время на стадию для намокания, высыхания, снега и таяния, иней, климат, частицы, пропуск водных и огненных мобов и список исключённых мобов. Файл `config/weathercoat.json` (атомарная запись, резервная копия `.bak`).
+Экран **Mod Menu → Weather Coat**: включение, игроки, число стадий, «догонять при появлении», дальность обновления, отдельные переключатели и время на стадию для намокания, высыхания, снега и таяния, иней, лужи, снежный налёт на земле и их радиус, климат, частицы, пропуск водных и огненных мобов и список исключённых мобов. Файл `config/weathercoat.json` (атомарная запись, резервная копия `.bak`).
 
 ### Установка
 
 1. **Fabric Loader** `0.19.3+` и **Fabric API** `0.161.0+26.3`.
-2. Скопируйте `weather-coat-1.0.1.jar` из `build/libs/` в папку `mods/`.
+2. Скопируйте `weather-coat-1.1.0.jar` из `build/libs/` в папку `mods/`.
 3. **Mod Menu** — опционально, открывает экран настроек.
 
 **Требования:** Minecraft `26.3` · Java `25` · только клиент.
@@ -55,7 +57,7 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 .\gradlew.bat clean build
 ```
 
-Готовый JAR: `build/libs/weather-coat-1.0.1.jar`.
+Готовый JAR: `build/libs/weather-coat-1.1.0.jar`.
 
 ---
 
@@ -78,10 +80,12 @@ Mobs and players get wet in the rain and snowy in the snow, step by step, and dr
 - **Frost**: mobs and players freezing in powder snow turn icy blue with ice crystals, and powder snow itself covers them in snow at once;
 - **Climate and heat**: deserts, badlands, sunshine and nearby fire, lava, campfires, magma or lit furnaces dry and melt faster, swamps and jungles dry slower; walking mobs shake snow off;
 - **Particles**: drops fall from wet mobs, snowflakes fall off walking snowy mobs, drying near heat gives off steam; a wolf is dry right after it shakes;
+- **Puddles** (optional): in the rain, puddles gather on open ground (stone, grass, paths, slabs), grow over several stages and ripple with rain drops, then dry up afterwards, faster in sunshine and heat. They appear exactly where rain falls (the vanilla heightmap), never under a roof; at the edge of a drop a puddle fades out instead of being cut off;
+- **Snow film** (optional): in snowfall a thin see-through white layer settles on open ground and treetops, patchy at first, then almost solid, and slowly melts afterwards. Ground effects reach 16–64 blocks around you (32 by default);
 - **First-person hands** get wet and frosty along with the body;
 - water creatures (fish, squid, dolphins, axolotls, nautiluses) and fire-immune ones (blazes, ghasts, magma cubes, striders) keep their look by default; guardians, snow golems, allays and vexes are excluded by a list you can change in the settings;
 - **Entity Texture Features**: ETF random textures are kept and get wet too; **Entity Model Features**: the shape comes from the EMF model;
-- **Catch up on sight**: a mob that comes into view in the middle of a long rain looks wet right away;
+- **Catch up on sight**: a mob that comes into view in the middle of a long rain looks wet right away; if it is already raining or snowing when you enter a world (or come back from another dimension), mobs, puddles and snow film start out complete;
 - generation runs on a background thread, unused textures are released after a minute, and everything is rebuilt when resource packs change.
 
 ### Controls
@@ -90,12 +94,12 @@ There are no keys: the effect runs on its own. Settings are in Mod Menu.
 
 ### Configuration
 
-The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, catch up on sight, update distance, separate toggles and time per stage for wetting, drying, snow, and melting, frost, climate, particles, skipping water and fire creatures, and the list of excluded mobs. `config/weathercoat.json` (atomic write, `.bak` backup).
+The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, catch up on sight, update distance, separate toggles and time per stage for wetting, drying, snow, and melting, frost, puddles, ground snow film and their radius, climate, particles, skipping water and fire creatures, and the list of excluded mobs. `config/weathercoat.json` (atomic write, `.bak` backup).
 
 ### Installation
 
 1. **Fabric Loader** `0.19.3+` and **Fabric API** `0.161.0+26.3`.
-2. Copy `weather-coat-1.0.1.jar` from `build/libs/` into `mods/`.
+2. Copy `weather-coat-1.1.0.jar` from `build/libs/` into `mods/`.
 3. **Mod Menu** — optional, opens the settings screen.
 
 **Requirements:** Minecraft `26.3` · Java `25` · client-only.
@@ -106,7 +110,7 @@ The **Mod Menu → Weather Coat** screen: on/off, players, number of stages, cat
 .\gradlew.bat clean build
 ```
 
-Output JAR: `build/libs/weather-coat-1.0.1.jar`.
+Output JAR: `build/libs/weather-coat-1.1.0.jar`.
 
 ## Лицензия / License
 

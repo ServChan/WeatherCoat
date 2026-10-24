@@ -8,6 +8,7 @@ group = project.maven_group
 def modVersion = project.version.toString()
 def licenseArchiveName = project.name
 def fabricLifecycleEventsVersion = project.fabric_lifecycle_events_version
+def fabricRenderingVersion = project.fabric_rendering_version
 def localModMenu = file(project.modmenu_jar)
 
 base {
@@ -42,6 +43,7 @@ dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-lifecycle-events-v1:${fabricLifecycleEventsVersion}"
+    implementation "net.fabricmc.fabric-api:fabric-rendering-v1:${fabricRenderingVersion}"
     if (localModMenu.isFile()) {
         compileOnly files(localModMenu)
     } else {
