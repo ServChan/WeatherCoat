@@ -8,6 +8,8 @@
 
 Mobs and players get wet in the rain and snowy in the snow, step by step, and dry off or melt afterwards.
 
+**Руководство / User guide:** [Русский](docs/USER_GUIDE_RU.md) · [English](docs/USER_GUIDE_EN.md)
+
 ## Русский
 
 ### Что это
